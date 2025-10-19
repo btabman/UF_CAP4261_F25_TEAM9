@@ -1,5 +1,8 @@
 # Virtual environment
 venv/
+.venv
+.venv/*
+.venv\*
 
 # Python cache
 __pycache__/
@@ -9,7 +12,13 @@ __pycache__/
 .ipynb_checkpoints/
 
 # Data
+data/*
 data/raw/
 data/processed/
 *.csv
 *.zip
+
+# Github
+.github
+.github/*
+.github\*

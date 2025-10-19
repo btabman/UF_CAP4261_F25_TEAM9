@@ -6,3 +6,9 @@ seaborn
 jupyter
 kaggle
 gradio
+polars
+pyarrow
+pathlib
+argparse
+pytorch
+xgboost
