@@ -11,7 +11,7 @@ greet_ui = gr.Interface(
     inputs="text",
     outputs="text",
     title="Greeting App",
-    allow_flagging="manual",         
+    flagging_mode="manual",         
     flagging_options=["Wrong", "Other"]
 )
 
@@ -20,7 +20,7 @@ add_ui = gr.Interface(
     inputs=[gr.Number(), gr.Number()],
     outputs="number",
     title="Adder App",
-    allow_flagging="manual",  
+    flagging_mode="manual",  
     flagging_options=["Bad result", "Unexpected"]
 )
 
