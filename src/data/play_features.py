@@ -2,6 +2,7 @@
 Module for play-level feature processing and dataset creation.
 Handles formation embeddings and team-frame data preparation.
 """
+#%%
 from __future__ import annotations
 
 import polars as pl
@@ -66,7 +67,7 @@ def add_formation_features(
     return out
 
 
-
+#%%
 def compute_formation_targets(df: pl.DataFrame) -> np.ndarray:
     """
     Compute formation-level target features for embedding supervision.
@@ -94,7 +95,7 @@ def compute_formation_targets(df: pl.DataFrame) -> np.ndarray:
     dist_center = float(np.sqrt((xs - cx) ** 2 + (ys - cy) ** 2).mean())
     return np.array([width_x, width_y, cx, cy, dist_center], dtype=np.float32)
 
-
+#%%
 class FormationDataset(Dataset):
     """
     Produces one sample per (game_id, play_id, frame_id, player_side).
@@ -112,29 +113,49 @@ class FormationDataset(Dataset):
         if frame_selector is not None:
             df = frame_selector(df)
 
-        # Normalize to rightward; map_elements returns a tuple -> use arr.get to unpack
-        df = (
-            df.with_columns([
-                pl.struct(["x", "y", "dir", "o", "play_direction"])
-                  .map_elements(lambda row: normalize_rightward(
-                      row["x"], row["y"], row["dir"], row["o"], row["play_direction"],
-                      FIELD_LENGTH, FIELD_WIDTH
-                  )).alias("_norm")
-            ])
-            .with_columns([
-                pl.col("_norm").arr.get(0).alias("x_norm"),
-                pl.col("_norm").arr.get(1).alias("y_norm"),
-                pl.col("_norm").arr.get(2).alias("dir_norm"),
-                pl.col("_norm").arr.get(3).alias("o_norm"),
-            ])
-            .drop("_norm")
-        )
+        cols = set(df.columns)
+
+        # If normalized columns already exist, use them as-is.
+        has_pre_norm = {"x_norm", "y_norm", "dir_norm", "o_norm"}.issubset(cols)
+
+        if not has_pre_norm:
+            # Fall back to normalizing from raw columns.
+            needed_raw = {"x", "y", "dir", "o", "play_direction"}
+            if not needed_raw.issubset(cols):
+                missing = needed_raw - cols
+                raise ValueError(
+                    "FormationDataset needs either normalized cols "
+                    "(x_norm,y_norm,dir_norm,o_norm) OR raw cols "
+                    "(x,y,dir,o,play_direction). Missing: "
+                    + ", ".join(sorted(missing))
+                )
+
+            def _safe_norm(s: dict[str, float | str]) -> tuple[float, float, float, float]:
+                xn, yn, dn, on = normalize_rightward(
+                    s["x"], s["y"], s["dir"], s["o"], s["play_direction"], FIELD_LENGTH, FIELD_WIDTH
+                )
+                return float(xn), float(yn), float(dn), float(on)
+
+            df = (
+                df.with_columns([
+                    pl.struct(["x", "y", "dir", "o", "play_direction"])
+                      .map_elements(_safe_norm, return_dtype=pl.Array(pl.Float64, 4))
+                      .alias("_norm")
+                ])
+                .with_columns([
+                    pl.col("_norm").arr.get(0).alias("x_norm"),
+                    pl.col("_norm").arr.get(1).alias("y_norm"),
+                    pl.col("_norm").arr.get(2).alias("dir_norm"),
+                    pl.col("_norm").arr.get(3).alias("o_norm"),
+                ])
+                .drop("_norm")
+            )
 
         # Stable sort (ordering won’t matter to DeepSets, but helps packing determinism)
         self.keys = ["game_id", "play_id", "frame_id", "player_side"]
         df = df.sort(self.keys + ["x_norm", "y_norm"])
 
-        # Partition into Python list of per-(game, play, frame, side) DataFrames
+        # Partition into per-(game,play,frame,side) groups
         self.groups: List[pl.DataFrame] = df.partition_by(self.keys, as_dict=False, maintain_order=True)
         self.n_max = int(n_max)
 
@@ -144,16 +165,11 @@ class FormationDataset(Dataset):
     def __getitem__(self, idx: int) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", tuple]:
         g: pl.DataFrame = self.groups[idx]
 
-        # Vectorized angle sin/cos
-        dir_deg = g["dir_norm"].to_numpy()
-        o_deg   = g["o_norm"].to_numpy()
-
-        dir_rad = np.deg2rad(dir_deg)
-        o_rad   = np.deg2rad(o_deg)
+        dir_rad = np.deg2rad(g["dir_norm"].to_numpy())
+        o_rad   = np.deg2rad(g["o_norm"].to_numpy())
         dir_sin, dir_cos = np.sin(dir_rad), np.cos(dir_rad)
         o_sin,   o_cos   = np.sin(o_rad),   np.cos(o_rad)
 
-        # Stack features
         features = np.stack([
             g["x_norm"].to_numpy(),
             g["y_norm"].to_numpy(),
@@ -163,7 +179,6 @@ class FormationDataset(Dataset):
             o_sin, o_cos,
         ], axis=1).astype(np.float32)  # [N, 8]
 
-        # Pad/truncate to n_max
         N, D = features.shape
         N_out = min(N, self.n_max)
         X = np.zeros((self.n_max, D), dtype=np.float32)
@@ -172,13 +187,9 @@ class FormationDataset(Dataset):
             X[:N_out] = features[:N_out]
             mask[:N_out] = 1.0
 
-        # Bag-level targets for self-supervision
         targets = compute_formation_targets(g)
-
-        # Meta id tuple (first row’s identifiers)
         meta = tuple(g[k][0] for k in self.keys)
 
-        # Convert to torch tensors if available, else return numpy (keeps Dataset usable w/o torch)
         if torch is not None:
             return (
                 torch.from_numpy(X),
@@ -188,3 +199,5 @@ class FormationDataset(Dataset):
             )
         else:
             return X, mask, targets, meta
+
+# %%
