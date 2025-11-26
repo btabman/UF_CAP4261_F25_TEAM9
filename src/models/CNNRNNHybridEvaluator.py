@@ -132,7 +132,7 @@ def main():
     trainer.visualize_predictions(
         predictions=test_results["predictions"],
         targets=test_results["targets"],
-        num_examples=6,
+        num_examples=3,
         save_path=RESULTS_DIR / "cnn_rnn_test_predictions.png"
     )
     
