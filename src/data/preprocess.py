@@ -29,7 +29,7 @@ INPUT_SCHEMA = {
     "play_direction": pl.Utf8,
     "absolute_yardline_number": pl.Int32,
     "player_name": pl.Utf8,
-    "player_height": pl.Utf8,      # keep as string "6-1" -> can parse later
+    "player_height": pl.Utf8,      # keep as string "6-1", format to inches in later step
     "player_weight": pl.Int32,
     "player_birth_date": pl.Date,  # parse to date
     "player_position": pl.Utf8,
