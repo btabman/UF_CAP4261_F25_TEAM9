@@ -12,3 +12,4 @@ pathlib
 argparse
 torch
 xgboost
+hdbscan
