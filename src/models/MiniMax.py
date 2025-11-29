@@ -204,66 +204,81 @@ def predict(test: pl.DataFrame, test_input: pl.DataFrame) -> pl.DataFrame | pd.D
 
 # upload data
 
-base_dir = Path(__file__).resolve().parent
-csv_path = base_dir / "train" / "input_2023_w01.csv"
-train_df = pl.read_csv(csv_path)
+def run_minimax_and_rmse():
+    # upload data
+    base_dir = Path(__file__).resolve().parent.parent.parent
 
-csv_path = base_dir / "train" / "output_2023_w01.csv"
-test_df = pl.read_csv(csv_path)
+    csv_path = base_dir / "data" / "raw" / "input_2023_w01.csv"
+    train_df = pl.read_csv(csv_path)
 
-train_df = train_df.filter(
-    (pl.col("game_id") == 2023090700)  & (pl.col("play_id") == 1069)
-)
+    csv_path = base_dir / "data" / "raw" / "output_2023_w01.csv"
+    test_df = pl.read_csv(csv_path)
 
-# run predictions
+    train_df = train_df.filter(
+        (pl.col("game_id") == 2023090700)  & (pl.col("play_id") == 1069)
+    )
 
-unique_combinations = train_df.select(
-    ["game_id", "play_id", "num_frames_output", "ball_land_x", "ball_land_y", "play_direction"]
-).unique()
+    # run predictions
+    unique_combinations = train_df.select(
+        ["game_id", "play_id", "num_frames_output", "ball_land_x", "ball_land_y", "play_direction"]
+    ).unique()
 
-predictions_df = pd.DataFrame(columns=['game_id', 'play_id', 'nfl_id', 'frame_id', 'x', 'y'])
-for row in unique_combinations.iter_rows(named=True):
-    predictions = predict(
-        test=test_df.filter(
-            (pl.col("game_id") == row['game_id']) & (pl.col("play_id") == row['play_id'])),
-        test_input=train_df.filter(
-            (pl.col("game_id") == row['game_id']) & (pl.col("play_id") == row['play_id'])
-        ))  
-    predictions_df = pd.concat([predictions_df, predictions], ignore_index=True)
-predictions_df.to_csv(base_dir / "predictions.csv", index=False)
+    predictions_df = pd.DataFrame(columns=['game_id', 'play_id', 'nfl_id', 'frame_id', 'x', 'y'])
 
-# calculate RMSE
+    for row in unique_combinations.iter_rows(named=True):
+        predictions = predict(
+            test=test_df.filter(
+                (pl.col("game_id") == row['game_id']) & (pl.col("play_id") == row['play_id'])),
+            test_input=train_df.filter(
+                (pl.col("game_id") == row['game_id']) & (pl.col("play_id") == row['play_id'])
+            )
+        )
+        predictions_df = pd.concat([predictions_df, predictions], ignore_index=True)
 
-merged_df = pd.merge(
-    test_df.to_pandas(),
-    predictions_df,
-    on=['game_id', 'play_id', 'nfl_id', 'frame_id'],
-    suffixes=('_true', '_pred') 
-)
+    predictions_path = base_dir / "predictions.csv"
+    predictions_df.to_csv(predictions_path, index=False)
 
-rmse = np.sqrt(0.5/len(merged_df)*(((merged_df['x_true'] - merged_df['x_pred']) ** 2).sum()
-                 +((merged_df['y_true'] - merged_df['y_pred']) ** 2).sum()))
-print(f"RMSE: {rmse}")
+    # compute RMSE
+    merged_df = pd.merge(
+        test_df.to_pandas(),
+        predictions_df,
+        on=['game_id', 'play_id', 'nfl_id', 'frame_id'],
+        suffixes=('_true', '_pred')
+    )
+
+    rmse = np.sqrt(
+        0.5 / len(merged_df) * (
+            ((merged_df['x_true'] - merged_df['x_pred']) ** 2).sum() +
+            ((merged_df['y_true'] - merged_df['y_pred']) ** 2).sum()
+        )
+    )
+
+    return {
+        "rmse": float(rmse),
+        "predictions_path": str(predictions_path),
+        "predictions_df": predictions_df,
+        "merged_df": merged_df
+    }
 
 # create trajectory plot
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-plt.figure(figsize=(10, 8))
+# plt.figure(figsize=(10, 8))
 
-# plot true trajectory
-plt.scatter(merged_df['x_true'], merged_df['y_true'], alpha=0.6, s=20, label='True', color='blue')
+# # plot true trajectory
+# plt.scatter(merged_df['x_true'], merged_df['y_true'], alpha=0.6, s=20, label='True', color='blue')
 
-# plot predicted trajectory
-plt.scatter(merged_df['x_pred'], merged_df['y_pred'], alpha=0.6, s=20, label='Predicted', color='red')
+# # plot predicted trajectory
+# plt.scatter(merged_df['x_pred'], merged_df['y_pred'], alpha=0.6, s=20, label='Predicted', color='red')
 
-plt.xlabel('X Coordinate', fontsize=12)
-plt.ylabel('Y Coordinate', fontsize=12)
-plt.title('True vs Predicted Trajectories', fontsize=14)
-plt.legend(fontsize=11)
-plt.grid(True, alpha=0.3)
+# plt.xlabel('X Coordinate', fontsize=12)
+# plt.ylabel('Y Coordinate', fontsize=12)
+# plt.title('True vs Predicted Trajectories', fontsize=14)
+# plt.legend(fontsize=11)
+# plt.grid(True, alpha=0.3)
 
-plt.tight_layout()
-plt.savefig(base_dir / 'cross_plot.png', dpi=300, bbox_inches='tight')
-plt.show()
-print("Cross plot saved as 'cross_plot.png'")
+# plt.tight_layout()
+# plt.savefig(base_dir / 'cross_plot.png', dpi=300, bbox_inches='tight')
+# plt.show()
+# print("Cross plot saved as 'cross_plot.png'")
