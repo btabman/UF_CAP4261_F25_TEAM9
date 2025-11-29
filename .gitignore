@@ -17,6 +17,7 @@ data/raw/
 data/processed/
 *.csv
 *.zip
+*.pt
 
 # Github
 .github
