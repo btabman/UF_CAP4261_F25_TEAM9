@@ -24,7 +24,7 @@ from src.features.features import (
 #    Adds: formation_width, formation_depth, formation_x_mean, formation_y_mean,
 #          distance_to_formation_center, relative_formation_depth, relative_formation_width
 # Needs: game_id, play_id, frame_id, player_side, x, y
-# ---------------------------------------------------------------------
+#%%
 def add_formation_features(
     df: pl.DataFrame,
     game="game_id",

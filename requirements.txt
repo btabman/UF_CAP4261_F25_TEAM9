@@ -13,3 +13,4 @@ argparse
 torch
 xgboost
 hdbscan
+lightgbm

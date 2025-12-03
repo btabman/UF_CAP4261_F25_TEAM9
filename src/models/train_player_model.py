@@ -510,7 +510,7 @@ def agentic_search_frames(
 
         if best is None or cv_rmse < best["score"]:
             best = dict(cfg=cfg, score=cv_rmse)
-            print("  👉 New best frame config:", best)
+            print(" -- New best frame config:", best)
 
     best["history"] = history
     return best
