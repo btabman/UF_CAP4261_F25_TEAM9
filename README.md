@@ -51,12 +51,20 @@ C:\Users\<YourName>\.kaggle\kaggle.json
 kaggle competitions download -c nfl-big-data-bowl-2026-prediction
 python -m zipfile -e nfl-big-data-bowl-2026-prediction.zip data/raw
 ```
+### 6. Clean data set
+Use the preprocess.py file to import the training and test data, perform some cleaning, and convert to parquet files. This will greatly inmprove speed compared to repeatedly reading from csv and/or holding the entire data set in memory.
 
-### 6. Visualizing data in Power BI
+
+### 7. Visualizing data in Power BI
 Have a look at the NFL.pbix file to get familiar with the data. It will show the player movements in the field as well as the ball landing location (shown as brown diamond on the scatter plot). The primary_key is a concatenation of the game_id and play_id fields, which can be selected on the list slicer to visualize different plays. There are also range slicers for the frame_id and output_frame_id, to visualize movement through time for the training set and test set respectively.
 If you need to access to Power BI, you can do so with your Gatorlink credentials: https://it.ufl.edu/cloud/collaboration-tools/office-365/?
 
 
-### 7. Running Models
+### 8. Running Models
 #### MiniMax.py
 This script includes a miniMax algorithm that functions by play. Each play object includes player objects. The Player() class controls the movement of each player as described by physics. The Play() class has all the functions needed to create the game tree, which currently implements alpha-beta prunning. Outside of both classes, is the predict() function, which takes in two polars dataframes: one with input data and another with output data. This function creates the needed Player() and Play() objects, runs the miniMax algorithm, and returns predictions. At the end of the script, there is a section that is in charge of loading datasets, running the predict() function for different plays, and reporting RMSE.
+
+
+#### player_model.ipynb
+First use feature_processing.ipynb to transform the original dataset into an enriched dataset with more physics attributes and clustered formation and play layout variables
+The player_model notebook uses the enhanced data to build an attention model by exploring various attention parameters to find an optimal configuration.
