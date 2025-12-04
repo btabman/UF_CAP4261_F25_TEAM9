@@ -64,16 +64,17 @@ If you need to access to Power BI, you can do so with your Gatorlink credentials
 #### MiniMax.py
 This script includes a miniMax algorithm that functions by play. Each play object includes player objects. The Player() class controls the movement of each player as described by physics. The Play() class has all the functions needed to create the game tree, which currently implements alpha-beta prunning. Outside of both classes, is the predict() function, which takes in two polars dataframes: one with input data and another with output data. This function creates the needed Player() and Play() objects, runs the miniMax algorithm, and returns predictions. At the end of the script, there is a section that is in charge of loading datasets, running the predict() function for different plays, and reporting RMSE.
 
+#### Transformer.py
+How to run and train the model simply put into the ternminal `python3 src/models/transformer.py'. This will start training a model for yourself. In the config dictionary you can adjust any of the features to your liking/capability of your machine.
 
 #### player_model.ipynb
 First use feature_processing.ipynb to transform the original dataset into an enriched dataset with more physics attributes and clustered formation and play layout variables
 The player_model notebook uses the enhanced data to build an attention model by exploring various attention parameters to find an optimal configuration.
 If you wish to load a .pt model built on this data structure and run it directly, us ethe code in notebooks/player_from_pt
 
-####
-CNNRNNHybrid
+#### CNNRNNHybrid
 To train the model run CNNRNNEvaluator.py. This uses the model configuration defined in CNNRNNHybrid.py and training utility defined in CNNRNNHybrid.py. In the evaluator you can specify certain configurations. Most notably you can change the MAX_SAMPLES to a lower value such as 500 for quick testing. To visual the results see the results directory when the program is finished running. Information about the effectivness of the model can be viewed there or printed to the terminal.
+
 ### 9. Running the app
 To run the app you can put into the terminal `python3 src/app/main.py'. From the terminal there will be a link to a localhost where you can then run and use the models already stored and compare the different RMSE scores of all the models.
-### Transformer.py
-How to run and train the model simply put into the ternminal `python3 src/models/transformer.py'. This will start training a model for yourself. In the config dictionary you can adjust any of the features to your liking/capability of your machine.
+
