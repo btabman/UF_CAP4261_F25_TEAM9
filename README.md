@@ -68,3 +68,4 @@ This script includes a miniMax algorithm that functions by play. Each play objec
 #### player_model.ipynb
 First use feature_processing.ipynb to transform the original dataset into an enriched dataset with more physics attributes and clustered formation and play layout variables
 The player_model notebook uses the enhanced data to build an attention model by exploring various attention parameters to find an optimal configuration.
+If you wish to load a .pt model built on this data structure and run it directly, us ethe code in notebooks/player_from_pt
