@@ -72,3 +72,5 @@ If you wish to load a .pt model built on this data structure and run it directly
 
 ### 9. Running the app
 To run the app you can put into the terminal `python3 src/app/main.py'. From the terminal there will be a link to a localhost where you can then run and use the models already stored and compare the different RMSE scores of all the models.
+### Transformer.py
+How to run and train the model simply put into the ternminal `python3 src/models/transformer.py'. This will start training a model for yourself. In the config dictionary you can adjust any of the features to your liking/capability of your machine.
